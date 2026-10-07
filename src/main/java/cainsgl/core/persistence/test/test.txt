@@ -1,0 +1,125 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include <sys/time.h>
+
+#define MAX_SIZE 1000000
+
+// 全局统计变量
+typedef struct {
+    long comparisons;
+    long movements;
+    double time;
+} Stats;
+
+void reset_stats(Stats* s) {
+    s->comparisons = 0;
+    s->movements = 0;
+    s->time = 0;
+}
+
+// 数据生成器
+void generate_data(const char* filename, int n) {
+    FILE* fp = fopen(filename, "wb");
+    fwrite(&n, sizeof(int), 1, fp);
+    for(int i=0; i<n; i++) {
+        double val = (double)rand() / RAND_MAX * 1000.0;
+        fwrite(&val, sizeof(double), 1, fp);
+    }
+    fclose(fp);
+}
+
+// 插入排序
+void insertion_sort(double arr[], int n, Stats* s) {
+    struct timespec start, end;
+    clock_gettime(CLOCK_MONOTONIC, &start);
+
+    for(int i=1; i<n; i++) {
+        double key = arr[i];
+        int j = i-1;
+        while(j >= 0 && (s->comparisons++, arr[j] > key)) {
+            arr[j+1] = arr[j];
+            s->movements++;
+            j--;
+        }
+        arr[j+1] = key;
+        s->movements++;
+    }
+
+    clock_gettime(CLOCK_MONOTONIC, &end);
+    s->time = (end.tv_sec - start.tv_sec) * 1e3 + (end.tv_nsec - start.tv_nsec) / 1e6;
+}
+
+// 快速排序实现
+void quick_sort(double arr[], int low, int high, Stats* s) {
+    if(low < high) {
+        double pivot = arr[high];
+        int i = low - 1;
+        for(int j=low; j<=high-1; j++) {
+            if(s->comparisons++, arr[j] < pivot) {
+                i++;
+                double temp = arr[i];
+                arr[i] = arr[j];
+                arr[j] = temp;
+                s->movements += 3;
+            }
+        }
+        double temp = arr[i+1];
+        arr[i+1] = arr[high];
+        arr[high] = temp;
+        s->movements += 3;
+
+        int pi = i+1;
+        quick_sort(arr, low, pi-1, s);
+        quick_sort(arr, pi+1, high, s);
+    }
+}
+
+// 其他排序算法实现类似...
+
+int main() {
+    const int sizes[] = {50000, 75000};
+    const char* algorithms[] = {"Insertion", "Quick"};
+
+    for(int s=0; s<sizeof(sizes)/sizeof(int); s++) {
+        int n = sizes[s];
+        printf("Testing size: %d\n", n);
+
+        for(int trial=0; trial<5; trial++) {
+            char filename[50];
+            sprintf(filename, "data_%d_%d.bin", n, trial);
+            generate_data(filename, n);
+
+            // 读取数据
+            FILE* fp = fopen(filename, "rb");
+            int count;
+            fread(&count, sizeof(int), 1, fp);
+            double* data = malloc(count * sizeof(double));
+            fread(data, sizeof(double), count, fp);
+            fclose(fp);
+
+            // 测试各算法
+            for(int a=0; a<2; a++) { // 示例只测试两种算法
+                double* copy = malloc(count * sizeof(double));
+                memcpy(copy, data, count * sizeof(double));
+
+                Stats stats = {0};
+                if(strcmp(algorithms[a], "Insertion") == 0) {
+                    insertion_sort(copy, count, &stats);
+                } else if(strcmp(algorithms[a], "Quick") == 0) {
+                    struct timespec start, end;
+                    clock_gettime(CLOCK_MONOTONIC, &start);
+                    quick_sort(copy, 0, count-1, &stats);
+                    clock_gettime(CLOCK_MONOTONIC, &end);
+                    stats.time = (end.tv_sec - start.tv_sec) * 1e3 + (end.tv_nsec - start.tv_nsec) / 1e6;
+                }
+
+                printf("%s Sort | Comparisons: %ld | Moves: %ld | Time: %.2fms\n",
+                      algorithms[a], stats.comparisons, stats.movements, stats.time);
+                free(copy);
+            }
+            free(data);
+        }
+    }
+    return 0;
+}

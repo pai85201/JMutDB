@@ -9,7 +9,7 @@ import cainsgl.core.persistence.AOF.impl.AOFListener;
 public class WriteFactor {
 
     // 指示set命令对应的写入线程将数据写入到哪一个缓冲区(主 or 从)
-    private static volatile int set_commandBufferMarker;
+    private static int set_commandBufferMarker;
     // 指示list命运对应的写入线程将数据写入到哪一个缓冲区(主 or 从)
     private static volatile int list_commandBufferMarker;
 
@@ -66,7 +66,6 @@ public class WriteFactor {
             list_commandBufferMarker = writeFactor;
         }
     }
-
 
     private static int getSet_commandBufferMarker() {
         return set_commandBufferMarker;

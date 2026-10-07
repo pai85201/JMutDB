@@ -47,6 +47,7 @@ public class RDBListener {
         if("HIGH".equals(businessType)) {
             rdbExecutor = Executors.newSingleThreadExecutor();
 
+            // 关闭用Hook
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                 forceExecuteRDB();
                 shutdownExecutor(rdbExecutor);

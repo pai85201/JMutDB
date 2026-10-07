@@ -31,8 +31,8 @@ public class DefaultSerializer {
     }
 
     // 对外方法；实现为实例方法；需要将类名信息写入
-    public static DefaultSerializer defaultSerialize(Map<byte[], byte[]> map) {
-        return new DefaultSerializer(map);
+    public static InitialBuilder defaultSerialize(Map<byte[], byte[]> map) {
+        return new InitialBuilder(map);
     }
 
     // 对外方法；简单序列化方法；不记录类型数据
@@ -202,10 +202,44 @@ public class DefaultSerializer {
 
 
 //-----                          建造者模式设置参数                              -----//
-    public DefaultSerializer setClassName(String keyClassName, String valueClassName){
+    // 初始建造者：仅允许设置类名
+    public static class InitialBuilder {
+        private final Map<byte[], byte[]> map;
+
+        InitialBuilder(Map<byte[], byte[]> map) {
+            this.map = map;
+        }
+
+        public FinalBuilder setClassName(String keyClassName, String valueClassName) {
+            return new FinalBuilder(map, keyClassName, valueClassName);
+        }
+    }
+
+    // 最终建造者：允许执行序列化
+    public static class FinalBuilder {
+        private final Map<byte[], byte[]> map;
+        private final String keyClassName;
+        private final String valueClassName;
+
+        FinalBuilder(Map<byte[], byte[]> map, String keyClassName, String valueClassName) {
+            this.map = map;
+            this.keyClassName = keyClassName;
+            this.valueClassName = valueClassName;
+        }
+
+        public byte[] doDefaultSerialize() {
+            return new DefaultSerializer(map, keyClassName, valueClassName).doDefaultSerialize();
+        }
+    }
+
+    private DefaultSerializer(
+            Map<byte[], byte[]> map,
+            String keyClassName,
+            String valueClassName
+    ) {
+        this.map = map;
         this.keyClassName = keyClassName;
         this.valueClassName = valueClassName;
-        return this;
     }
 
 

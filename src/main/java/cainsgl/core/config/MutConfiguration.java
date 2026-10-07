@@ -12,7 +12,7 @@ public class MutConfiguration {
         try {
             ConfigLoader.loadConfig("D:\\Code\\mut-db\\src\\main\\java\\cainsgl\\core\\config\\mut-config.xml");
         } catch (Exception e) {
-
+            throw new RuntimeException(e);
         }
     }
 
